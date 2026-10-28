@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Rules for user-specific data isolation
+    match /users/{userId} {
+      // User profile doc
+      allow read, write: if isOwner(userId);
+
+      // User transactions collection
+      match /transactions/{transactionId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User monthly budgets collection
+      match /budgets/{budgetId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User financial goals collection
+      match /goals/{goalId} {
+        allow read, write: if isOwner(userId);
+      }
+
+      // User preferences / profile doc
+      match /profile/{docId} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Deny all other collections by default
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
